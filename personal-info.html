@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moneysq | 個人資料填寫</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer">
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+
+<div class="max-w-3xl mx-auto px-4 py-8 md:py-12">
+    <!-- 回到首頁 -->
+    <div class="mb-6 flex items-center justify-between">
+        <a href="index.html" class="inline-flex items-center text-sm text-slate-400 hover:text-cyan-400">
+            <i class="fas fa-arrow-left mr-2"></i> 返回主頁
+        </a>
+        <div class="flex items-center gap-2 text-sm font-semibold">
+            <span class="w-8 h-8 bg-cyan-500 rounded-sm flex items-center justify-center text-slate-900 text-xs">SQ</span>
+            <span>Money<span class="text-cyan-400">sq</span></span>
+        </div>
+    </div>
+
+    <!-- 標題 -->
+    <div class="mb-8">
+        <h1 class="text-2xl md:text-3xl font-bold mb-2">填寫個人資料</h1>
+        <p class="text-slate-400 text-sm">
+            請提供以下資料，以便為你度身訂造最合適的貸款方案。
+        </p>
+    </div>
+
+    <!-- 資料表單 -->
+    <form class="space-y-8 glass-card p-6 md:p-8 border border-cyan-500/20 bg-slate-900/60 rounded-2xl">
+        <!-- 人工 -->
+        <div class="space-y-2">
+            <label class="block text-sm text-slate-200">每月人工 (港幣)</label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 text-sm">$</span>
+                <input type="number" min="0" step="100"
+                       class="w-full pl-7 pr-3 py-2 rounded-lg bg-slate-950/60 border border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                       placeholder="例如：20000">
+            </div>
+            <p class="text-[11px] text-slate-500">請輸入稅前每月入息。</p>
+        </div>
+
+        <!-- 職業 -->
+        <div class="space-y-2">
+            <label class="block text-sm text-slate-200">職業</label>
+            <input type="text"
+                   class="w-full px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                   placeholder="例如：文職、銷售、工程師、自僱人士等">
+        </div>
+
+        <!-- 地址 (智能提示) -->
+        <div class="space-y-2">
+            <label class="block text-sm text-slate-200">住宅地址</label>
+            <div class="relative">
+                <input id="address-input" type="text" autocomplete="off"
+                       class="w-full px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                       placeholder="例如：旺角彌敦道 700 號">
+                <div id="address-suggestions"
+                     class="absolute z-10 mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg shadow-lg max-h-56 overflow-y-auto hidden">
+                </div>
+            </div>
+            <p class="text-[11px] text-slate-500">
+                開始輸入地區或屋苑名稱，例如「旺」、「將軍澳」、「沙田第一城」，系統會即時顯示建議選項。
+            </p>
+        </div>
+
+        <!-- 住宅情況 -->
+        <div class="space-y-2">
+            <label class="block text-sm text-slate-200">住宅情況</label>
+            <div class="flex flex-wrap gap-4 text-sm">
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="housing" value="rent"
+                           class="text-cyan-500 focus:ring-cyan-500">
+                    <span>租賃</span>
+                </label>
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="housing" value="owned"
+                           class="text-cyan-500 focus:ring-cyan-500">
+                    <span>購入</span>
+                </label>
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="housing" value="family"
+                           class="text-cyan-500 focus:ring-cyan-500">
+                    <span>與家人同住</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 提交 -->
+        <div class="pt-4 flex flex-col gap-3">
+            <button type="submit"
+                    class="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 py-3 rounded-full font-bold text-sm tracking-wider glow-button">
+                提交資料
+            </button>
+            <p class="text-[10px] text-slate-600 leading-relaxed text-center">
+                所收集資料均會保密，只作貸款申請及風險評估用途。
+            </p>
+        </div>
+    </form>
+</div>
+
+<script>
+    // 示範用地址資料：你可以改為連接完整的香港地址資料庫或 API
+    const hkAddressSamples = [
+        '旺角 彌敦道',
+        '旺角 太子道西',
+        '旺角 西洋菜南街',
+        '旺角 登打士街',
+        '旺角 花園街',
+        '油麻地 廟街',
+        '尖沙咀 柯士甸道',
+        '尖沙咀 彌敦道',
+        '將軍澳 唐俊街',
+        '將軍澳 唐明街',
+        '將軍澳 寶林邨',
+        '將軍澳 尚德邨',
+        '沙田 沙田第一城',
+        '沙田 新城市廣場',
+        '荃灣 荃灣中心',
+        '荃灣 荃灣廣場',
+        '觀塘 觀塘道',
+        '觀塘 麗港城',
+        '元朗 YOHO Town',
+        '屯門 良景邨',
+        '天水圍 天盛苑'
+    ];
+
+    const addressInput = document.getElementById('address-input');
+    const suggestionsBox = document.getElementById('address-suggestions');
+
+    function renderSuggestions(list) {
+        suggestionsBox.innerHTML = '';
+        if (!list.length) {
+            suggestionsBox.classList.add('hidden');
+            return;
+        }
+        list.forEach(item => {
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.textContent = item;
+            option.className = 'w-full text-left px-3 py-2 text-sm hover:bg-slate-800';
+            option.addEventListener('click', () => {
+                addressInput.value = item;
+                suggestionsBox.classList.add('hidden');
+            });
+            suggestionsBox.appendChild(option);
+        });
+        suggestionsBox.classList.remove('hidden');
+    }
+
+    addressInput.addEventListener('input', () => {
+        const q = addressInput.value.trim();
+        if (!q) {
+            suggestionsBox.classList.add('hidden');
+            return;
+        }
+        const lower = q.toLowerCase();
+        const matched = hkAddressSamples.filter(addr => addr.toLowerCase().includes(lower)).slice(0, 20);
+        renderSuggestions(matched);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!suggestionsBox.contains(e.target) && e.target !== addressInput) {
+            suggestionsBox.classList.add('hidden');
+        }
+    });
+</script>
+</body>
+</html>
+
