@@ -36,7 +36,7 @@ function App() {
               Case Distribution
             </button>
             <a
-              href="/score-calculator.html"
+              href="/revolving-score.html"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1.5 rounded-full border border-transparent bg-slate-800/60 text-slate-400 hover:bg-slate-700 transition text-xs md:text-sm"

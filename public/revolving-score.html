@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revolving Score - 評分計算公式系統</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 30px; }
+        h1 { text-align: center; color: #333; margin-bottom: 20px; font-size: 28px; }
+        h3 { color: #555; margin-bottom: 15px; border-bottom: 2px solid #667eea; padding-bottom: 8px; }
+        h4 { color: #444; margin: 15px 0 8px; font-size: 15px; }
+        .toolbar { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; background: #e9ecef; color: #333; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-success { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
+        .btn-info { background: linear-gradient(135deg, #2193b0, #6dd5ed); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #eb3349, #f45c43); color: white; }
+        .btn-secondary { background: #e9ecef; color: #555; border: 1px solid #dee2e6; }
+        .btn-secondary:hover { background: #dee2e6; }
+        .tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 0; }
+        .tab { padding: 12px 20px; background: #e9ecef; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .tab:hover { background: #dee2e6; }
+        .tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .tab-content { display: none; padding: 20px; background: #f8f9fa; border-radius: 0 10px 10px 10px; }
+        .tab-content.active { display: block; }
+        .section { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .section:last-child { margin-bottom: 0; }
+        .grid { display: grid; gap: 15px; }
+        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e9ecef; }
+        th { background: #f8f9fa; font-weight: 600; color: #555; }
+        tr:hover { background: #f8f9fa; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: white; }
+        .badge-success { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .badge-info { background: linear-gradient(135deg, #2193b0, #6dd5ed); }
+        .badge-warning { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .badge-danger { background: linear-gradient(135deg, #eb3349, #f45c43); }
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .result-card { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 12px; text-align: center; }
+        .result-card .label { font-size: 12px; opacity: 0.9; margin-bottom: 5px; }
+        .result-card .value { font-size: 28px; font-weight: 700; }
+        .result-card.highlight { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .trigger-yes { color: #11998e; font-weight: 700; }
+        .trigger-no { color: #adb5bd; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .rate-range { font-size: 32px; font-weight: 700; color: #667eea; text-align: center; padding: 20px; background: #f0f3ff; border-radius: 12px; margin-top: 15px; }
+        .hint { color: #888; font-size: 0.9em; margin-bottom: 15px; }
+        .param-table td:first-child { color: #555; font-weight: 600; width: 160px; }
+        .param-table input[type="number"] {
+            width: 110px; padding: 8px 10px; border: 2px solid #f0c040;
+            background: #fffbeb; border-radius: 8px; font-size: 14px; color: #333;
+        }
+        .param-table input[type="number"]:focus { outline: none; border-color: #667eea; box-shadow: 0 0 8px rgba(102,126,234,0.3); }
+        .param-desc { color: #999; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 評分計算公式系統</h1>
+    <div class="toolbar">
+        <button class="btn btn-primary" onclick="calculate()">🔄 重新計算</button>
+        <button class="btn btn-success" onclick="exportSettings()">📥 匯出設定</button>
+        <button class="btn btn-info" onclick="showImportModal()">📤 匯入設定</button>
+        <button class="btn btn-warning" onclick="showFormulasModal()">📝 產生公式</button>
+        <button class="btn btn-danger" onclick="resetToDefaults()">🔄 重設預設值</button>
+    </div>
+    <div class="tabs">
+        <button class="tab active" data-tab="calc" onclick="showTab('calc')">⌨️ 計算測試</button>
+        <button class="tab" data-tab="factor1" onclick="showTab('factor1')">⭐ Factor 1</button>
+        <button class="tab" data-tab="factor2" onclick="showTab('factor2')">⏱️ Factor 2</button>
+        <button class="tab" data-tab="factor3" onclick="showTab('factor3')">📊 Factor 3</button>
+        <button class="tab" data-tab="baseRate" onclick="showTab('baseRate')">💹 基礎利率</button>
+        <button class="tab" data-tab="adjustments" onclick="showTab('adjustments')">⚡ 加減息</button>
+        <button class="tab" data-tab="approvalParams" onclick="showTab('approvalParams')">⚙️ 審批參數</button>
+    </div>
+
+    <!-- 計算測試 -->
+    <div id="tab-calc" class="tab-content active">
+        <div class="section">
+            <h3>📋 輸入客戶資料</h3>
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>TU Grade 信貸評級</label>
+                    <select id="input-tu" onchange="calculate()">
+                        <option value="AA">AA</option><option value="BB">BB</option><option value="CC">CC</option>
+                        <option value="DD">DD</option><option value="EE">EE</option><option value="FF">FF</option>
+                        <option value="GG">GG</option><option value="HH">HH</option><option value="II">II</option>
+                        <option value="YY">YY</option><option value="JJ">JJ</option><option value="XX">XX</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>月薪 Monthly Salary ($)</label>
+                    <input type="number" id="input-salary" value="50000" onchange="calculate()">
+                </div>
+                <div class="form-group">
+                    <label>DSR 供款比率 (%)</label>
+                    <input type="number" id="input-dsr" value="50" onchange="calculate()">
+                </div>
+            </div>
+        </div>
+        <div class="section">
+            <h3>📈 計算結果</h3>
+            <div class="result-grid">
+                <div class="result-card"><div class="label">Factor 1 (TU)</div><div class="value" id="result-f1">-</div></div>
+                <div class="result-card"><div class="label">Factor 2 (月薪)</div><div class="value" id="result-f2">-</div></div>
+                <div class="result-card"><div class="label">Factor 3 (DSR)</div><div class="value" id="result-f3">-</div></div>
+                <div class="result-card highlight"><div class="label">Total Score</div><div class="value" id="result-total">-</div></div>
+            </div>
+            <div class="rate-range" id="result-rate">利率範圍：- % ~ - %</div>
+            <table id="triggers-table">
+                <thead><tr><th>加減息條件</th><th>調整幅度</th><th>狀態</th></tr></thead>
+                <tbody id="triggers-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Factor 1 -->
+    <div id="tab-factor1" class="tab-content">
+        <div class="section">
+            <h3>⭐ Factor 1 - TU Grade 評分設定</h3>
+            <table>
+                <thead><tr><th>TU Grade 範圍</th><th>分數</th><th>說明</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">AA - DD</span></td><td><input type="number" id="f1-tier1" value="3" style="width:80px" onchange="calculate()"></td><td>優質客戶</td></tr>
+                    <tr><td><span class="badge badge-info">EE - FF</span></td><td><input type="number" id="f1-tier2" value="2" style="width:80px" onchange="calculate()"></td><td>標準客戶</td></tr>
+                    <tr><td><span class="badge badge-warning">GG</span></td><td><input type="number" id="f1-tier3" value="1" style="width:80px" onchange="calculate()"></td><td>一般客戶</td></tr>
+                    <tr><td><span class="badge badge-danger">HH/II/YY/JJ/XX</span></td><td><input type="number" id="f1-tier4" value="0" style="width:80px" onchange="calculate()"></td><td>高風險</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Factor 2 -->
+    <div id="tab-factor2" class="tab-content">
+        <div class="section">
+            <h3>⏱️ Factor 2 - 月薪評分設定</h3>
+            <table>
+                <thead><tr><th>月薪範圍</th><th>分數</th><th>閾值</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">≥ $60,000</span></td><td><input type="number" id="f2-tier1" value="3" style="width:80px" onchange="calculate()"></td><td><input type="number" id="f2-thresh1" value="60000" style="width:100px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-info">$40K - $60K</span></td><td><input type="number" id="f2-tier2" value="2" style="width:80px" onchange="calculate()"></td><td><input type="number" id="f2-thresh2" value="40000" style="width:100px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-warning">$15K - $40K</span></td><td><input type="number" id="f2-tier3" value="1" style="width:80px" onchange="calculate()"></td><td><input type="number" id="f2-thresh3" value="15000" style="width:100px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-danger">&lt; $15K</span></td><td><input type="number" id="f2-tier4" value="0" style="width:80px" onchange="calculate()"></td><td>-</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Factor 3 -->
+    <div id="tab-factor3" class="tab-content">
+        <div class="section">
+            <h3>📊 Factor 3 - DSR 評分設定</h3>
+            <table>
+                <thead><tr><th>DSR 範圍</th><th>分數</th><th>閾值 (%)</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">≤ 40%</span></td><td><input type="number" id="f3-tier1" value="3" style="width:80px" onchange="calculate()"></td><td><input type="number" id="f3-thresh1" value="40" style="width:100px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-info">41% - 60%</span></td><td><input type="number" id="f3-tier2" value="2" style="width:80px" onchange="calculate()"></td><td><input type="number" id="f3-thresh2" value="60" style="width:100px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-warning">61% - 80%</span></td><td><input type="number" id="f3-tier3" value="1" style="width:80px" onchange="calculate()"></td><td><input type="number" id="f3-thresh3" value="80" style="width:100px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-danger">&gt; 80%</span></td><td><input type="number" id="f3-tier4" value="0" style="width:80px" onchange="calculate()"></td><td>-</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 基礎利率 -->
+    <div id="tab-baseRate" class="tab-content">
+        <div class="section">
+            <h3>💹 基礎利率表 (根據 Total Score)</h3>
+            <table>
+                <thead><tr><th>Total Score</th><th>最低利率 (%)</th><th>最高利率 (%)</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="badge badge-success">9</span></td><td><input type="number" id="rate-9-min" value="15" step="0.5" style="width:80px" onchange="calculate()"></td><td><input type="number" id="rate-9-max" value="16.5" step="0.5" style="width:80px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-info">7 - 8</span></td><td><input type="number" id="rate-78-min" value="16.5" step="0.5" style="width:80px" onchange="calculate()"></td><td><input type="number" id="rate-78-max" value="18" step="0.5" style="width:80px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-info">6</span></td><td><input type="number" id="rate-6-min" value="18" step="0.5" style="width:80px" onchange="calculate()"></td><td><input type="number" id="rate-6-max" value="20" step="0.5" style="width:80px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-warning">4 - 5</span></td><td><input type="number" id="rate-45-min" value="23" step="0.5" style="width:80px" onchange="calculate()"></td><td><input type="number" id="rate-45-max" value="26" step="0.5" style="width:80px" onchange="calculate()"></td></tr>
+                    <tr><td><span class="badge badge-danger">0 - 3</span></td><td><input type="number" id="rate-03-min" value="26" step="0.5" style="width:80px" onchange="calculate()"></td><td><input type="number" id="rate-03-max" value="28" step="0.5" style="width:80px" onchange="calculate()"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 加減息 -->
+    <div id="tab-adjustments" class="tab-content">
+        <div class="section">
+            <h3>⚡ 加息條件</h3>
+            <table>
+                <thead><tr><th>條件</th><th>調整 (%)</th><th>閾值</th><th>啟用</th></tr></thead>
+                <tbody>
+                    <tr><td>TU Grade = HH/II/YY/JJ/XX</td><td><input type="number" id="adj-tu-add" value="5" step="0.5" style="width:80px" onchange="calculate()"></td><td>-</td><td><input type="checkbox" id="adj-tu-enabled" checked onchange="calculate()"></td></tr>
+                    <tr><td>低月薪</td><td><input type="number" id="adj-salary-add" value="5" step="0.5" style="width:80px" onchange="calculate()"></td><td><input type="number" id="adj-salary-low-thresh" value="15000" style="width:100px" onchange="calculate()"></td><td><input type="checkbox" id="adj-salary-low-enabled" checked onchange="calculate()"></td></tr>
+                    <tr><td>高 DSR</td><td><input type="number" id="adj-dsr-add" value="5" step="0.5" style="width:80px" onchange="calculate()"></td><td><input type="number" id="adj-dsr-high-thresh" value="80" style="width:100px" onchange="calculate()"></td><td><input type="checkbox" id="adj-dsr-high-enabled" checked onchange="calculate()"></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="section">
+            <h3>💚 減息條件</h3>
+            <table>
+                <thead><tr><th>條件</th><th>調整 (%)</th><th>閾值</th><th>啟用</th></tr></thead>
+                <tbody>
+                    <tr><td>高月薪</td><td><input type="number" id="adj-salary-reduce" value="-3" step="0.5" style="width:80px" onchange="calculate()"></td><td><input type="number" id="adj-salary-high-thresh" value="60000" style="width:100px" onchange="calculate()"></td><td><input type="checkbox" id="adj-salary-high-enabled" checked onchange="calculate()"></td></tr>
+                    <tr><td>低 DSR</td><td><input type="number" id="adj-dsr-reduce" value="-3" step="0.5" style="width:80px" onchange="calculate()"></td><td><input type="number" id="adj-dsr-low-thresh" value="40" style="width:100px" onchange="calculate()"></td><td><input type="checkbox" id="adj-dsr-low-enabled" checked onchange="calculate()"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 審批參數設定（來自 AI_Go_circular 頁面設計） -->
+    <div id="tab-approvalParams" class="tab-content">
+        <div class="section">
+            <h3>⚙️ 審批參數設定</h3>
+            <p class="hint">🟡 黃色區域可自行調整</p>
+            <table class="param-table">
+                <thead><tr><th>參數</th><th>數值</th><th>說明</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td>DSR 上限</td>
+                        <td><input type="number" id="param-dsr-limit" value="95" step="1" onchange="saveApprovalParams()"> %</td>
+                        <td class="param-desc">供款佔收入比率上限</td>
+                    </tr>
+                    <tr>
+                        <td>DTI 上限</td>
+                        <td><input type="number" id="param-dti-limit" value="20" step="1" onchange="saveApprovalParams()"> x</td>
+                        <td class="param-desc">債務收入比 (外債/月薪)</td>
+                    </tr>
+                    <tr>
+                        <td>Card Min Pay %</td>
+                        <td><input type="number" id="param-card-min-pay" value="3" step="0.5" onchange="saveApprovalParams()"> %</td>
+                        <td class="param-desc">信用卡最低還款比率</td>
+                    </tr>
+                    <tr>
+                        <td>最低批核金額</td>
+                        <td><input type="number" id="param-min-amount" value="50000" step="10000" onchange="saveApprovalParams()"></td>
+                        <td class="param-desc">低於此金額不批核</td>
+                    </tr>
+                    <tr>
+                        <td>最高批核金額</td>
+                        <td><input type="number" id="param-max-amount" value="2000000" step="100000" onchange="saveApprovalParams()"></td>
+                        <td class="param-desc">單筆貸款上限</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn btn-primary" onclick="saveApprovalParams(); alert('審批參數已儲存！')">套用設定</button>
+            <button class="btn btn-secondary" onclick="resetApprovalParams()">重設預設值</button>
+        </div>
+    </div>
+</div>
+
+<!-- 匯入設定 Modal -->
+<div id="import-modal" class="modal">
+    <div class="modal-content">
+        <h3>📖 匯入設定</h3>
+        <p>請貼上 JSON 設定內容：</p>
+        <textarea id="import-json" style="width:100%;height:200px;font-family:monospace;margin-top:10px;padding:10px;border:2px solid #e9ecef;border-radius:8px;"></textarea>
+        <div style="margin-top:15px;text-align:right">
+            <button class="btn" onclick="closeImportModal()">取消</button>
+            <button class="btn btn-primary" onclick="importSettings()">匯入</button>
+        </div>
+    </div>
+</div>
+
+<!-- Excel 公式 Modal -->
+<div id="formulas-modal" class="modal">
+    <div class="modal-content" style="max-width:900px">
+        <h3>📝 Excel 公式產生器</h3>
+        <p>以下公式假設 TU Grade 在 A2, Monthly Salary 在 B2, DSR 在 C2</p>
+        <div id="formulas-content" style="max-height:500px;overflow-y:auto;margin-top:15px"></div>
+        <div style="margin-top:15px;text-align:right">
+            <button class="btn btn-primary" onclick="closeFormulasModal()">關閉</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const defaultSettings = {
+    factor1: { tier1: 3, tier2: 2, tier3: 1, tier4: 0 },
+    factor2: { tier1: 3, tier2: 2, tier3: 1, tier4: 0, thresh1: 60000, thresh2: 40000, thresh3: 15000 },
+    factor3: { tier1: 3, tier2: 2, tier3: 1, tier4: 0, thresh1: 40, thresh2: 60, thresh3: 80 },
+    baseRates: {
+        score9: { min: 15, max: 16.5 }, score78: { min: 16.5, max: 18 }, score6: { min: 18, max: 20 },
+        score45: { min: 23, max: 26 }, score03: { min: 26, max: 28 }
+    },
+    adjustments: {
+        tuAdd: { rate: 5, enabled: true },
+        salaryAdd: { rate: 5, thresh: 15000, enabled: true },
+        dsrAdd: { rate: 5, thresh: 80, enabled: true },
+        salaryReduce: { rate: -3, thresh: 60000, enabled: true },
+        dsrReduce: { rate: -3, thresh: 40, enabled: true }
+    },
+    approvalParams: {
+        dsrLimit: 95,
+        dtiLimit: 20,
+        cardMinPay: 3,
+        minAmount: 50000,
+        maxAmount: 2000000
+    }
+};
+
+let settings = JSON.parse(JSON.stringify(defaultSettings));
+
+function getTUScore(tu) {
+    const highRisk = ['HH', 'II', 'YY', 'JJ', 'XX'];
+    if (['AA', 'BB', 'CC', 'DD'].includes(tu)) return settings.factor1.tier1;
+    if (['EE', 'FF'].includes(tu)) return settings.factor1.tier2;
+    if (tu === 'GG') return settings.factor1.tier3;
+    if (highRisk.includes(tu)) return settings.factor1.tier4;
+    return 0;
+}
+
+function getSalaryScore(salary) {
+    if (salary >= settings.factor2.thresh1) return settings.factor2.tier1;
+    if (salary >= settings.factor2.thresh2) return settings.factor2.tier2;
+    if (salary >= settings.factor2.thresh3) return settings.factor2.tier3;
+    return settings.factor2.tier4;
+}
+
+function getDSRScore(dsr) {
+    if (dsr <= settings.factor3.thresh1) return settings.factor3.tier1;
+    if (dsr <= settings.factor3.thresh2) return settings.factor3.tier2;
+    if (dsr <= settings.factor3.thresh3) return settings.factor3.tier3;
+    return settings.factor3.tier4;
+}
+
+function getBaseRate(total) {
+    if (total === 9) return settings.baseRates.score9;
+    if (total >= 7) return settings.baseRates.score78;
+    if (total === 6) return settings.baseRates.score6;
+    if (total >= 4) return settings.baseRates.score45;
+    return settings.baseRates.score03;
+}
+
+function readSettings() {
+    settings.factor1 = {
+        tier1: parseFloat(document.getElementById('f1-tier1').value),
+        tier2: parseFloat(document.getElementById('f1-tier2').value),
+        tier3: parseFloat(document.getElementById('f1-tier3').value),
+        tier4: parseFloat(document.getElementById('f1-tier4').value)
+    };
+    settings.factor2 = {
+        tier1: parseFloat(document.getElementById('f2-tier1').value),
+        tier2: parseFloat(document.getElementById('f2-tier2').value),
+        tier3: parseFloat(document.getElementById('f2-tier3').value),
+        tier4: parseFloat(document.getElementById('f2-tier4').value),
+        thresh1: parseFloat(document.getElementById('f2-thresh1').value),
+        thresh2: parseFloat(document.getElementById('f2-thresh2').value),
+        thresh3: parseFloat(document.getElementById('f2-thresh3').value)
+    };
+    settings.factor3 = {
+        tier1: parseFloat(document.getElementById('f3-tier1').value),
+        tier2: parseFloat(document.getElementById('f3-tier2').value),
+        tier3: parseFloat(document.getElementById('f3-tier3').value),
+        tier4: parseFloat(document.getElementById('f3-tier4').value),
+        thresh1: parseFloat(document.getElementById('f3-thresh1').value),
+        thresh2: parseFloat(document.getElementById('f3-thresh2').value),
+        thresh3: parseFloat(document.getElementById('f3-thresh3').value)
+    };
+    settings.baseRates = {
+        score9: { min: parseFloat(document.getElementById('rate-9-min').value), max: parseFloat(document.getElementById('rate-9-max').value) },
+        score78: { min: parseFloat(document.getElementById('rate-78-min').value), max: parseFloat(document.getElementById('rate-78-max').value) },
+        score6: { min: parseFloat(document.getElementById('rate-6-min').value), max: parseFloat(document.getElementById('rate-6-max').value) },
+        score45: { min: parseFloat(document.getElementById('rate-45-min').value), max: parseFloat(document.getElementById('rate-45-max').value) },
+        score03: { min: parseFloat(document.getElementById('rate-03-min').value), max: parseFloat(document.getElementById('rate-03-max').value) }
+    };
+    settings.adjustments = {
+        tuAdd: { rate: parseFloat(document.getElementById('adj-tu-add').value), enabled: document.getElementById('adj-tu-enabled').checked },
+        salaryAdd: { rate: parseFloat(document.getElementById('adj-salary-add').value), thresh: parseFloat(document.getElementById('adj-salary-low-thresh').value), enabled: document.getElementById('adj-salary-low-enabled').checked },
+        dsrAdd: { rate: parseFloat(document.getElementById('adj-dsr-add').value), thresh: parseFloat(document.getElementById('adj-dsr-high-thresh').value), enabled: document.getElementById('adj-dsr-high-enabled').checked },
+        salaryReduce: { rate: parseFloat(document.getElementById('adj-salary-reduce').value), thresh: parseFloat(document.getElementById('adj-salary-high-thresh').value), enabled: document.getElementById('adj-salary-high-enabled').checked },
+        dsrReduce: { rate: parseFloat(document.getElementById('adj-dsr-reduce').value), thresh: parseFloat(document.getElementById('adj-dsr-low-thresh').value), enabled: document.getElementById('adj-dsr-low-enabled').checked }
+    };
+    settings.approvalParams = {
+        dsrLimit: parseFloat(document.getElementById('param-dsr-limit').value),
+        dtiLimit: parseFloat(document.getElementById('param-dti-limit').value),
+        cardMinPay: parseFloat(document.getElementById('param-card-min-pay').value),
+        minAmount: parseFloat(document.getElementById('param-min-amount').value),
+        maxAmount: parseFloat(document.getElementById('param-max-amount').value)
+    };
+}
+
+function applySettings() {
+    const s = settings;
+    document.getElementById('f1-tier1').value = s.factor1.tier1;
+    document.getElementById('f1-tier2').value = s.factor1.tier2;
+    document.getElementById('f1-tier3').value = s.factor1.tier3;
+    document.getElementById('f1-tier4').value = s.factor1.tier4;
+    document.getElementById('f2-tier1').value = s.factor2.tier1;
+    document.getElementById('f2-tier2').value = s.factor2.tier2;
+    document.getElementById('f2-tier3').value = s.factor2.tier3;
+    document.getElementById('f2-tier4').value = s.factor2.tier4;
+    document.getElementById('f2-thresh1').value = s.factor2.thresh1;
+    document.getElementById('f2-thresh2').value = s.factor2.thresh2;
+    document.getElementById('f2-thresh3').value = s.factor2.thresh3;
+    document.getElementById('f3-tier1').value = s.factor3.tier1;
+    document.getElementById('f3-tier2').value = s.factor3.tier2;
+    document.getElementById('f3-tier3').value = s.factor3.tier3;
+    document.getElementById('f3-tier4').value = s.factor3.tier4;
+    document.getElementById('f3-thresh1').value = s.factor3.thresh1;
+    document.getElementById('f3-thresh2').value = s.factor3.thresh2;
+    document.getElementById('f3-thresh3').value = s.factor3.thresh3;
+    document.getElementById('rate-9-min').value = s.baseRates.score9.min;
+    document.getElementById('rate-9-max').value = s.baseRates.score9.max;
+    document.getElementById('rate-78-min').value = s.baseRates.score78.min;
+    document.getElementById('rate-78-max').value = s.baseRates.score78.max;
+    document.getElementById('rate-6-min').value = s.baseRates.score6.min;
+    document.getElementById('rate-6-max').value = s.baseRates.score6.max;
+    document.getElementById('rate-45-min').value = s.baseRates.score45.min;
+    document.getElementById('rate-45-max').value = s.baseRates.score45.max;
+    document.getElementById('rate-03-min').value = s.baseRates.score03.min;
+    document.getElementById('rate-03-max').value = s.baseRates.score03.max;
+    document.getElementById('adj-tu-add').value = s.adjustments.tuAdd.rate;
+    document.getElementById('adj-tu-enabled').checked = s.adjustments.tuAdd.enabled;
+    document.getElementById('adj-salary-add').value = s.adjustments.salaryAdd.rate;
+    document.getElementById('adj-salary-low-thresh').value = s.adjustments.salaryAdd.thresh;
+    document.getElementById('adj-salary-low-enabled').checked = s.adjustments.salaryAdd.enabled;
+    document.getElementById('adj-dsr-add').value = s.adjustments.dsrAdd.rate;
+    document.getElementById('adj-dsr-high-thresh').value = s.adjustments.dsrAdd.thresh;
+    document.getElementById('adj-dsr-high-enabled').checked = s.adjustments.dsrAdd.enabled;
+    document.getElementById('adj-salary-reduce').value = s.adjustments.salaryReduce.rate;
+    document.getElementById('adj-salary-high-thresh').value = s.adjustments.salaryReduce.thresh;
+    document.getElementById('adj-salary-high-enabled').checked = s.adjustments.salaryReduce.enabled;
+    document.getElementById('adj-dsr-reduce').value = s.adjustments.dsrReduce.rate;
+    document.getElementById('adj-dsr-low-thresh').value = s.adjustments.dsrReduce.thresh;
+    document.getElementById('adj-dsr-low-enabled').checked = s.adjustments.dsrReduce.enabled;
+    if (s.approvalParams) {
+        document.getElementById('param-dsr-limit').value = s.approvalParams.dsrLimit;
+        document.getElementById('param-dti-limit').value = s.approvalParams.dtiLimit;
+        document.getElementById('param-card-min-pay').value = s.approvalParams.cardMinPay;
+        document.getElementById('param-min-amount').value = s.approvalParams.minAmount;
+        document.getElementById('param-max-amount').value = s.approvalParams.maxAmount;
+    } else {
+        const d = defaultSettings.approvalParams;
+        document.getElementById('param-dsr-limit').value = d.dsrLimit;
+        document.getElementById('param-dti-limit').value = d.dtiLimit;
+        document.getElementById('param-card-min-pay').value = d.cardMinPay;
+        document.getElementById('param-min-amount').value = d.minAmount;
+        document.getElementById('param-max-amount').value = d.maxAmount;
+    }
+}
+
+function saveApprovalParams() {
+    readSettings();
+}
+
+function resetApprovalParams() {
+    if (!confirm('確定要重設審批參數為預設值嗎？')) return;
+    settings.approvalParams = JSON.parse(JSON.stringify(defaultSettings.approvalParams));
+    applySettings();
+    alert('審批參數已重設！');
+}
+
+function calculate() {
+    readSettings();
+    const tu = document.getElementById('input-tu').value;
+    const salary = parseFloat(document.getElementById('input-salary').value) || 0;
+    const dsr = parseFloat(document.getElementById('input-dsr').value) || 0;
+    const f1 = getTUScore(tu), f2 = getSalaryScore(salary), f3 = getDSRScore(dsr);
+    const total = f1 + f2 + f3;
+    const baseRate = getBaseRate(total);
+    const triggers = [];
+    let adjTotal = 0;
+    const highRiskTU = ['HH', 'II', 'YY', 'JJ', 'XX'];
+
+    if (settings.adjustments.tuAdd.enabled && highRiskTU.includes(tu)) {
+        adjTotal += settings.adjustments.tuAdd.rate;
+        triggers.push({ name: '高風險TU Grade', rate: '+' + settings.adjustments.tuAdd.rate + '%', triggered: true });
+    } else {
+        triggers.push({ name: '高風險TU Grade', rate: '+' + settings.adjustments.tuAdd.rate + '%', triggered: false });
+    }
+
+    if (settings.adjustments.salaryAdd.enabled && salary <= settings.adjustments.salaryAdd.thresh) {
+        adjTotal += settings.adjustments.salaryAdd.rate;
+        triggers.push({ name: '低月薪≤$' + settings.adjustments.salaryAdd.thresh.toLocaleString(), rate: '+' + settings.adjustments.salaryAdd.rate + '%', triggered: true });
+    } else {
+        triggers.push({ name: '低月薪≤$' + settings.adjustments.salaryAdd.thresh.toLocaleString(), rate: '+' + settings.adjustments.salaryAdd.rate + '%', triggered: false });
+    }
+
+    if (settings.adjustments.dsrAdd.enabled && dsr >= settings.adjustments.dsrAdd.thresh) {
+        adjTotal += settings.adjustments.dsrAdd.rate;
+        triggers.push({ name: '高DSR≥' + settings.adjustments.dsrAdd.thresh + '%', rate: '+' + settings.adjustments.dsrAdd.rate + '%', triggered: true });
+    } else {
+        triggers.push({ name: '高DSR≥' + settings.adjustments.dsrAdd.thresh + '%', rate: '+' + settings.adjustments.dsrAdd.rate + '%', triggered: false });
+    }
+
+    if (settings.adjustments.salaryReduce.enabled && salary >= settings.adjustments.salaryReduce.thresh) {
+        adjTotal += settings.adjustments.salaryReduce.rate;
+        triggers.push({ name: '高月薪≥$' + settings.adjustments.salaryReduce.thresh.toLocaleString(), rate: settings.adjustments.salaryReduce.rate + '%', triggered: true });
+    } else {
+        triggers.push({ name: '高月薪≥$' + settings.adjustments.salaryReduce.thresh.toLocaleString(), rate: settings.adjustments.salaryReduce.rate + '%', triggered: false });
+    }
+
+    if (settings.adjustments.dsrReduce.enabled && dsr <= settings.adjustments.dsrReduce.thresh) {
+        adjTotal += settings.adjustments.dsrReduce.rate;
+        triggers.push({ name: '低DSR≤' + settings.adjustments.dsrReduce.thresh + '%', rate: settings.adjustments.dsrReduce.rate + '%', triggered: true });
+    } else {
+        triggers.push({ name: '低DSR≤' + settings.adjustments.dsrReduce.thresh + '%', rate: settings.adjustments.dsrReduce.rate + '%', triggered: false });
+    }
+
+    const finalMin = baseRate.min + adjTotal;
+    const finalMax = baseRate.max + adjTotal;
+
+    document.getElementById('result-f1').textContent = f1;
+    document.getElementById('result-f2').textContent = f2;
+    document.getElementById('result-f3').textContent = f3;
+    document.getElementById('result-total').textContent = total;
+    document.getElementById('result-rate').textContent = '利率範圍：' + finalMin + '% ~ ' + finalMax + '%';
+
+    const tbody = document.getElementById('triggers-body');
+    tbody.innerHTML = triggers.map(t =>
+        '<tr><td>' + t.name + '</td><td>' + t.rate + '</td><td class="' + (t.triggered ? 'trigger-yes' : 'trigger-no') + '">' + (t.triggered ? '✓ 觸發' : '✗ 未觸發') + '</td></tr>'
+    ).join('');
+}
+
+function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    document.querySelector('.tab[data-tab="' + tabId + '"]').classList.add('active');
+}
+
+function exportSettings() {
+    readSettings();
+    const exportData = { version: '1.0', exportDate: new Date().toISOString(), settings: settings };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'score_settings_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+}
+
+function showImportModal() { document.getElementById('import-modal').classList.add('show'); }
+function closeImportModal() { document.getElementById('import-modal').classList.remove('show'); }
+
+function importSettings() {
+    try {
+        const json = document.getElementById('import-json').value;
+        const data = JSON.parse(json);
+        if (data.settings) settings = data.settings;
+        else settings = data;
+        applySettings();
+        closeImportModal();
+        calculate();
+        alert('設定匯入成功！');
+    } catch (e) { alert('匯入失敗：' + e.message); }
+}
+
+function resetToDefaults() {
+    if (confirm('確定要重設所有設定為預設值嗎？')) {
+        settings = JSON.parse(JSON.stringify(defaultSettings));
+        applySettings();
+        calculate();
+        alert('已重設為預設值！');
+    }
+}
+
+function showFormulasModal() {
+    readSettings();
+    const s = settings;
+    let html = '<div class="section">';
+    html += '<h4>Factor 1 - TU Grade 分數</h4>';
+    html += '<pre style="background:#f5f5f5;padding:10px;overflow-x:auto">IFS(OR(A2="AA",A2="BB",A2="CC",A2="DD"),' + s.factor1.tier1 + ',OR(A2="EE",A2="FF"),' + s.factor1.tier2 + ',A2="GG",' + s.factor1.tier3 + ',TRUE,' + s.factor1.tier4 + ')</pre>';
+    html += '<h4>Factor 2 - 月薪分數</h4>';
+    html += '<pre style="background:#f5f5f5;padding:10px;overflow-x:auto">IFS(B2>=' + s.factor2.thresh1 + ',' + s.factor2.tier1 + ',B2>=' + s.factor2.thresh2 + ',' + s.factor2.tier2 + ',B2>=' + s.factor2.thresh3 + ',' + s.factor2.tier3 + ',TRUE,' + s.factor2.tier4 + ')</pre>';
+    html += '<h4>Factor 3 - DSR 分數</h4>';
+    html += '<pre style="background:#f5f5f5;padding:10px;overflow-x:auto">IFS(C2<=' + s.factor3.thresh1 + ',' + s.factor3.tier1 + ',C2<=' + s.factor3.thresh2 + ',' + s.factor3.tier2 + ',C2<=' + s.factor3.thresh3 + ',' + s.factor3.tier3 + ',TRUE,' + s.factor3.tier4 + ')</pre>';
+    html += '<h4>基礎最低利率（假設 Total Score 在 D2）</h4>';
+    html += '<pre style="background:#f5f5f5;padding:10px;overflow-x:auto">IFS(D2=9,' + s.baseRates.score9.min + '%,D2>=7,' + s.baseRates.score78.min + '%,D2=6,' + s.baseRates.score6.min + '%,D2>=4,' + s.baseRates.score45.min + '%,TRUE,' + s.baseRates.score03.min + '%)</pre>';
+    html += '<h4>基礎最高利率</h4>';
+    html += '<pre style="background:#f5f5f5;padding:10px;overflow-x:auto">IFS(D2=9,' + s.baseRates.score9.max + '%,D2>=7,' + s.baseRates.score78.max + '%,D2=6,' + s.baseRates.score6.max + '%,D2>=4,' + s.baseRates.score45.max + '%,TRUE,' + s.baseRates.score03.max + '%)</pre>';
+    html += '<h4>加息觸發（TU高風險+低薪+高DSR）</h4>';
+    html += '<pre style="background:#f5f5f5;padding:10px;overflow-x:auto">IF(OR(A2="HH",A2="II",A2="YY",A2="JJ",A2="XX"),' + s.adjustments.tuAdd.rate + '%,0)+IF(B2<=' + s.adjustments.salaryAdd.thresh + ',' + s.adjustments.salaryAdd.rate + '%,0)+IF(C2>=' + s.adjustments.dsrAdd.thresh + ',' + s.adjustments.dsrAdd.rate + '%,0)</pre>';
+    html += '<h4>減息觸發（高薪+低DSR）</h4>';
+    html += '<pre style="background:#f5f5f5;padding:10px;overflow-x:auto">IF(B2>=' + s.adjustments.salaryReduce.thresh + ',' + s.adjustments.salaryReduce.rate + '%,0)+IF(C2<=' + s.adjustments.dsrReduce.thresh + ',' + s.adjustments.dsrReduce.rate + '%,0)</pre>';
+    html += '</div>';
+    document.getElementById('formulas-content').innerHTML = html;
+    document.getElementById('formulas-modal').classList.add('show');
+}
+
+function closeFormulasModal() { document.getElementById('formulas-modal').classList.remove('show'); }
+
+calculate();
+</script>
+</body>
+</html>
