@@ -1,5 +1,5 @@
 {
-  "name": "monitoring-and-alert",
+  "name": "revolving-score",
   "private": true,
   "version": "0.0.1",
   "type": "module",

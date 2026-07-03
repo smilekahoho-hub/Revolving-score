@@ -1,6 +1,12 @@
-# Monitoring and Alert
+# Revolving Score
 
-6 個月 DTI 負債趨勢監控儀表板（React + Vite + Recharts）。
+K Cash 風險控制台：DTI 監控儀表板、Case Distribution 及評分計算公式系統（React + Vite）。
+
+## 功能
+
+- **Monitoring and Alert** — 6 個月 DTI 負債趨勢監控
+- **Case Distribution** — 每日 Case 分佈表
+- **評分計算公式** — TU / 月薪 / DSR 評分與利率計算（`/score-calculator.html`）
 
 ## 本地執行
 
