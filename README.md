@@ -6,7 +6,14 @@ K Cash 風險控制台：DTI 監控儀表板、Case Distribution 及評分計算
 
 - **Monitoring and Alert** — 6 個月 DTI 負債趨勢監控
 - **Case Distribution** — 每日 Case 分佈表
-- **評分計算公式** — TU / 月薪 / DSR 評分與利率計算（`/score-calculator.html`）
+- **評分計算公式** — TU / 月薪 / DSR 評分與利率計算（含審批參數設定）
+
+## 線上分享（GitHub Pages）
+
+部署完成後，可直接分享以下網址：
+
+- **主頁（自動跳轉）：** https://smilekahoho-hub.github.io/Revolving-score/
+- **評分計算頁：** https://smilekahoho-hub.github.io/Revolving-score/revolving-score.html
 
 ## 本地執行
 
