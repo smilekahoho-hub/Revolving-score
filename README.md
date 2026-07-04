@@ -10,9 +10,18 @@ K Cash 風險控制台：DTI 監控儀表板、Case Distribution 及評分計算
 
 ## 線上分享（GitHub Pages）
 
-部署完成後，可直接分享以下網址：
+### 一次性設定（若出現 404 請照做）
 
-- **主頁（自動跳轉）：** https://smilekahoho-hub.github.io/Revolving-score/
+1. 開啟 [Settings → Pages](https://github.com/smilekahoho-hub/Revolving-score/settings/pages)
+2. **Build and deployment** → **Source** 選 **Deploy from a branch**
+3. **Branch** 選 `main`，**Folder** 選 **`/docs`**
+4. 按 **Save**，等 1–2 分鐘
+
+> 不要用 `/ (root)`，必須選 **`/docs`** 資料夾。
+
+### 分享網址
+
+- **主頁（推薦）：** https://smilekahoho-hub.github.io/Revolving-score/
 - **評分計算頁：** https://smilekahoho-hub.github.io/Revolving-score/revolving-score.html
 
 ## 本地執行
